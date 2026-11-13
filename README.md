@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="src-tauri/icons/128x128@2x.png" alt="Clocked logo" width="128" height="128" />
+  <img src="app-icon.png" alt="Clocked logo" width="128" height="128" />
   <h1>Clocked</h1>
   <p>A full-screen analog clock that runs as your screen saver on macOS and Windows.</p>
   <p>
@@ -74,6 +74,3 @@ pnpm install
 - **macOS**: `saver/` is a native screen saver (`ScreenSaverView`) that loads the built clock in a `WKWebView` from inside the bundle.
 - **Windows**: the Tauri app is the screen saver. Windows runs it with `/s`, it opens a window on each monitor, and exits on any key, click or mouse move.
 
-## Releases
-
-Pushing a tag like `v0.1.0` runs the [release workflow](.github/workflows/release.yml), which builds the macOS saver and the Windows `.scr` and attaches them to the GitHub release for that tag. Running the workflow by hand attaches the builds to the latest tag.
