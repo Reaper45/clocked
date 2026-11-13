@@ -15,8 +15,10 @@ pub fn run() {
     #[cfg(windows)]
     {
         let arg = std::env::args().nth(1).unwrap_or_default().to_lowercase();
-        if !arg.starts_with("/s") {
-            return; // /c, /p, none → nothing to do
+        // `tauri dev` starts debug builds with no arguments, so show the saver then too
+        let dev_launch = cfg!(debug_assertions) && arg.is_empty();
+        if !arg.starts_with("/s") && !dev_launch {
+            return; // /c, /p (the preview stays blank), none → nothing to do
         }
     }
 

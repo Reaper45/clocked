@@ -15,7 +15,7 @@
 ## Features
 
 - Bold analog clock with the digital time and date, sized to fill the screen
-- Real OS screen saver: the system handles the idle timer, preview, dismissing and the password prompt
+- Real OS screen saver: the system handles the idle timer, dismissing and the password prompt
 - Covers every monitor on Windows
 - Dark theme, built-in fonts, works offline
 
@@ -42,7 +42,7 @@ To update, install the new version over the old one, then log out and back in so
 2. Right-click it and choose **Install**. Windows may show a SmartScreen warning because the file isn't signed; choose **More info → Run anyway**.
 3. In **Settings → Personalization → Lock screen → Screen saver**, pick **Clocked**, set the wait time and tick **On resume, display logon screen**.
 
-Needs the WebView2 runtime, which is preinstalled on Windows 10 and 11.
+Needs the WebView2 runtime, which is preinstalled on Windows 10 and 11. The small preview in the Screen Saver Settings dialog stays blank; use **Preview** to see it full screen.
 
 ## Development
 
