@@ -7,8 +7,9 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# Build jobs run the tagged code, so they only get read access; the release job gets write
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   tag:
@@ -16,10 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      sha: ${{ steps.tag.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
       - id: tag
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then
@@ -31,8 +34,11 @@ jobs:
             echo "::error::No v* tag to release. Push one first, e.g. git tag v0.1.0 && git push origin v0.1.0"
             exit 1
           fi
-          echo "Releasing $tag"
+          # Both builds use this commit, even if the tag is moved while they run
+          sha=$(git rev-parse "$tag^{commit}")
+          echo "Releasing $tag ($sha)"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
   macos:
     name: macOS saver
@@ -41,7 +47,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.tag.outputs.tag }}
+          ref: ${{ needs.tag.outputs.sha }}
+          persist-credentials: false
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -64,7 +71,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.tag.outputs.tag }}
+          ref: ${{ needs.tag.outputs.sha }}
+          persist-credentials: false
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -93,6 +101,12 @@ jobs:
     name: Attach to release
     needs: [tag, macos, windows]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Runs for the same tag (a tag push and a manual run, or a rerun) wait for each other
+    concurrency:
+      group: release-${{ needs.tag.outputs.tag }}
+      cancel-in-progress: false
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ needs.tag.outputs.tag }}
@@ -101,8 +115,15 @@ jobs:
         with:
           path: assets
           merge-multiple: true
+      # A new release starts as a draft and is only published once every file is attached,
+      # so a failed upload never leaves a public release with missing downloads
       - name: Create the release if needed and upload
         run: |
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
-            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "Clocked $TAG" --generate-notes
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
+              --title "Clocked $TAG" --generate-notes
+          fi
           gh release upload "$TAG" assets/* --repo "$GITHUB_REPOSITORY" --clobber
+          if [ "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true ]; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+          fi
