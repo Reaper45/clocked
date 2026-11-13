@@ -7,6 +7,8 @@
     ·
     <a href="#installation">Installation</a>
     ·
+    <a href="#uninstallation">Uninstallation</a>
+    ·
     <a href="#development">Development</a>
   </p>
   <img src="docs/screenshot.png" alt="Clocked showing the time and date full screen" width="800" />
@@ -44,6 +46,26 @@ To update, install the new version over the old one, then log out and back in so
 
 Needs the WebView2 runtime, which is preinstalled on Windows 10 and 11. The small preview in the Screen Saver Settings dialog stays blank; use **Preview** to see it full screen.
 
+## Uninstallation
+
+### macOS
+
+1. Open **System Settings → Screen Saver** and pick a different screen saver, so macOS isn't left using one that's gone.
+2. Remove the saver, either way:
+   - In Finder, choose **Go → Go to Folder…**, enter `~/Library/Screen Savers`, and move `Clocked.saver` to the Trash.
+   - Or in Terminal:
+     ```sh
+     rm -rf ~/Library/Screen\ Savers/Clocked.saver
+     ```
+3. Log out and back in so macOS unloads it.
+
+If you installed it from source, `pnpm saver:uninstall` does step 2 for you, including any temporary copies an install left behind.
+
+### Windows
+
+1. In **Settings → Personalization → Lock screen → Screen saver**, set the screen saver to **(None)** or another one, and click **OK**.
+2. Delete `Clocked.scr` from where you saved it. Right-click **Install** uses the file in place, so that's usually your Downloads folder. If you copied it into `C:\Windows\System32`, delete it from there instead (Windows asks for administrator permission).
+
 ## Development
 
 ### Prerequisites
@@ -66,6 +88,7 @@ pnpm install
 | `pnpm tauri dev` | Runs the Tauri app full screen; any input closes it |
 | `pnpm saver` | Builds `saver/build/Clocked.saver` (macOS) |
 | `pnpm saver:install` | Builds the macOS saver and installs it into `~/Library/Screen Savers` |
+| `pnpm saver:uninstall` | Removes the macOS saver from `~/Library/Screen Savers` |
 | `pnpm tauri build` | Builds the Windows app; rename the `.exe` in `src-tauri/target/release` to `.scr` |
 
 ### How it works

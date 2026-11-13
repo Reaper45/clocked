@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "saver": "sh saver/build.sh",
-    "saver:install": "sh saver/install.sh"
+    "saver:install": "sh saver/install.sh",
+    "saver:uninstall": "sh saver/uninstall.sh"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
