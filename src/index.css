@@ -1,0 +1,53 @@
+@font-face {
+  font-family: "Chillax";
+  src: url("./assets/chillax-semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Chillax";
+  src: url("./assets/chillax-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "General";
+  src: url("./assets/general-sans-semibold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --text-h: #08060d; /* Read by the canvas for the digital time and date */
+  --bg: #fff;
+
+  color-scheme: light dark;
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-h: #f3f4f6;
+    --bg: #000;
+  }
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+canvas {
+  display: block; /* Removes inline-block bottom gap */
+  width: 100vw;
+  height: 100vh;
+}
+
+.saver canvas {
+  cursor: none;
+}

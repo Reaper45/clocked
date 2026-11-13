@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "saver": "sh saver/build.sh",
+    "saver:install": "sh saver/build.sh && mkdir -p ~/Library/Screen\\ Savers && rm -rf ~/Library/Screen\\ Savers/Clocked.saver && cp -R saver/build/Clocked.saver ~/Library/Screen\\ Savers/"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
