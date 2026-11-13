@@ -12,7 +12,8 @@ final class ClockedView: ScreenSaverView, WKNavigationDelegate {
     private static let maxReloads = 3
 
     private var webView: WKWebView?
-    /// Reloads after a failure since the page last loaded; stops a broken page from reloading forever
+    /// Reloads after failures since the saver started. Only a new start resets it, so a page that
+    /// loads and then crashes again each time still stops after maxReloads.
     private var reloads = 0
 
     override init?(frame: NSRect, isPreview: Bool) {
@@ -112,7 +113,6 @@ final class ClockedView: ScreenSaverView, WKNavigationDelegate {
     // MARK: Diagnostics: `log stream --predicate 'subsystem == "com.jo.clocked.saver"'`
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        reloads = 0
         log.info("page loaded, window=\(self.window != nil) visible=\(self.window?.isVisible ?? false)")
         // The clock draws on requestAnimationFrame, which WebKit pauses if it thinks the view is hidden
         webView.callAsyncJavaScript(
