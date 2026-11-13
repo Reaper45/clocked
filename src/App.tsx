@@ -117,23 +117,22 @@ function App() {
     ctx.fillStyle = color;
     ctx.fillText(`${hours}:${minutes}`, -offset, 0);
 
-    // Weekday in the accent color followed by the day of the month
+    // Weekday in the accent color, then the day of the month and the month, centered as one line
     const weekday = now.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase() + " ";
-    const day = `${String(now.getDate())},`;
-
-    const monthIdx = Number(now.getMonth());
-    const month = MONTHS[monthIdx];
-    const monthWidth = ctx.measureText(month).width;
+    const day = `${String(now.getDate())}, `;
+    const month = MONTHS[now.getMonth()];
 
     const weekdayWidth = ctx.measureText(weekday).width;
-    const startX = offset - (weekdayWidth + ctx.measureText(day).width) / 2;
+    const dayWidth = ctx.measureText(day).width;
+    const monthWidth = ctx.measureText(month).width;
+    const startX = offset - (weekdayWidth + dayWidth + monthWidth) / 2;
 
     ctx.textAlign = "left";
     ctx.fillStyle = ACCENT;
     ctx.fillText(weekday, startX, 0);
     ctx.fillStyle = color;
     ctx.fillText(day, startX + weekdayWidth, 0);
-    ctx.fillText(month, startX + weekdayWidth + monthWidth, 0);
+    ctx.fillText(month, startX + weekdayWidth + dayWidth, 0);
 
     ctx.restore();
   }
@@ -252,14 +251,13 @@ function App() {
     watchPixelRatio();
     window.addEventListener("resize", resize);
 
-    // Canvas text alone doesn't trigger a web font download, so request Chillax explicitly.
-    // The frame loop picks it up as soon as it has loaded.
-    document.fonts.load(`700 1em Chillax`).catch(() => {
-      // Keep the fallback font
-    });
-    document.fonts.load(`600 1em Chillax`).catch(() => {
-      // Keep the fallback font
-    });
+    // Canvas text alone doesn't trigger a web font download, so request each face the canvas
+    // draws with. The frame loop picks them up as soon as they have loaded.
+    for (const font of ["700 1em Chillax", "600 1em Chillax", "600 1em General"]) {
+      document.fonts.load(font).catch(() => {
+        // Keep the fallback font
+      });
+    }
 
     frame = requestAnimationFrame(draw);
 
