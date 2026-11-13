@@ -7,9 +7,6 @@
     "saver-*"
   ],
   "permissions": [
-    "core:default",
-    "core:menu:default",
-    "process:default",
-    "core:app:allow-default-window-icon"
+    "core:default"
   ]
 }

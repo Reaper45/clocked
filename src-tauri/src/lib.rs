@@ -21,7 +21,6 @@ pub fn run() {
     }
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![dismiss])
         .setup(|app| {
             create_saver_windows(app)?;
