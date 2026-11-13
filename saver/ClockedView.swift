@@ -8,7 +8,12 @@ private let log = Logger(subsystem: "com.jo.clocked.saver", category: "saver")
 /// macOS handles everything else: idle time, the System Settings preview, dismissing and the password.
 @objc(ClockedView)
 final class ClockedView: ScreenSaverView, WKNavigationDelegate {
+    private static let pageURL = URL(string: "clocked://app/index.html")!
+    private static let maxReloads = 3
+
     private var webView: WKWebView?
+    /// Reloads after a failure since the page last loaded; stops a broken page from reloading forever
+    private var reloads = 0
 
     override init?(frame: NSRect, isPreview: Bool) {
         super.init(frame: frame, isPreview: isPreview)
@@ -67,14 +72,30 @@ final class ClockedView: ScreenSaverView, WKNavigationDelegate {
         webView.appearance = NSAppearance(named: .darkAqua)
         // Let the black background below show until the page has loaded
         webView.setValue(false, forKey: "drawsBackground")
-        webView.load(URLRequest(url: URL(string: "clocked://app/index.html")!))
+        webView.load(URLRequest(url: Self.pageURL))
         addSubview(webView)
         self.webView = webView
+        reloads = 0
     }
 
     private func unloadPage() {
         webView?.removeFromSuperview()
         webView = nil
+    }
+
+    /// Reloads the page after WebKit fails, instead of leaving the saver black until macOS restarts it
+    private func recover(_ webView: WKWebView, reason: String) {
+        guard webView === self.webView else { return } // Already unloaded or replaced
+        guard reloads < Self.maxReloads else {
+            log.error("\(reason, privacy: .public); giving up after \(Self.maxReloads) reloads")
+            return
+        }
+        reloads += 1
+        log.error("\(reason, privacy: .public); reloading (attempt \(self.reloads))")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self, weak webView] in
+            guard let self, let webView, webView === self.webView else { return }
+            webView.load(URLRequest(url: Self.pageURL))
+        }
     }
 
     /// Calls a private WebKit setter taking a BOOL, only if this macOS version still has it
@@ -91,6 +112,7 @@ final class ClockedView: ScreenSaverView, WKNavigationDelegate {
     // MARK: Diagnostics: `log stream --predicate 'subsystem == "com.jo.clocked.saver"'`
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        reloads = 0
         log.info("page loaded, window=\(self.window != nil) visible=\(self.window?.isVisible ?? false)")
         // The clock draws on requestAnimationFrame, which WebKit pauses if it thinks the view is hidden
         webView.callAsyncJavaScript(
@@ -111,15 +133,23 @@ final class ClockedView: ScreenSaverView, WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        log.error("navigation failed: \(error, privacy: .public)")
+        guard !Self.isCancellation(error) else { return }
+        recover(webView, reason: "navigation failed: \(error)")
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        log.error("navigation failed to start: \(error, privacy: .public)")
+        guard !Self.isCancellation(error) else { return }
+        recover(webView, reason: "navigation failed to start: \(error)")
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        log.error("web content process terminated")
+        recover(webView, reason: "web content process terminated")
+    }
+
+    /// A load replaced by another load reports a cancellation; that isn't a failure to recover from
+    private static func isCancellation(_ error: Error) -> Bool {
+        let error = error as NSError
+        return error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled
     }
 
     override func draw(_ rect: NSRect) {
