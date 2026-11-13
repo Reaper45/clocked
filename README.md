@@ -51,15 +51,16 @@ Needs the WebView2 runtime, which is preinstalled on Windows 10 and 11. The smal
 ### macOS
 
 1. Open **System Settings → Screen Saver** and pick a different screen saver, so macOS isn't left using one that's gone.
-2. Remove the saver, either way:
-   - In Finder, choose **Go → Go to Folder…**, enter `~/Library/Screen Savers`, and move `Clocked.saver` to the Trash.
-   - Or in Terminal:
+2. Remove `Clocked.saver`. Where it is depends on what you chose when installing:
+   - **This user only**: in Finder, choose **Go → Go to Folder…**, enter `~/Library/Screen Savers`, and move `Clocked.saver` to the Trash. Or in Terminal:
      ```sh
      rm -rf ~/Library/Screen\ Savers/Clocked.saver
      ```
+   - **All users**: go to `/Library/Screen Savers` instead and move `Clocked.saver` to the Trash (Finder asks for an administrator password). Or in Terminal:
+     ```sh
+     sudo rm -rf /Library/Screen\ Savers/Clocked.saver
+     ```
 3. Log out and back in so macOS unloads it.
-
-If you installed it from source, `pnpm saver:uninstall` does step 2 for you, including any temporary copies an install left behind.
 
 ### Windows
 
@@ -88,7 +89,7 @@ pnpm install
 | `pnpm tauri dev` | Runs the Tauri app full screen; any input closes it |
 | `pnpm saver` | Builds `saver/build/Clocked.saver` (macOS) |
 | `pnpm saver:install` | Builds the macOS saver and installs it into `~/Library/Screen Savers` |
-| `pnpm saver:uninstall` | Removes the macOS saver from `~/Library/Screen Savers` |
+| `pnpm saver:uninstall` | Removes the saver `pnpm saver:install` put in `~/Library/Screen Savers`, plus any temporary copies it left |
 | `pnpm tauri build` | Builds the Windows app; rename the `.exe` in `src-tauri/target/release` to `.scr` |
 
 ### How it works
