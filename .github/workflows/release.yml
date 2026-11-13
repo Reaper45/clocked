@@ -1,0 +1,108 @@
+name: Release
+
+# Builds the macOS saver and the Windows .scr and attaches them to a GitHub release.
+# A pushed v* tag releases that tag; running it by hand releases the latest v* tag.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Resolve tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: tag
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          fi
+          if [ -z "$tag" ]; then
+            echo "::error::No v* tag to release. Push one first, e.g. git tag v0.1.0 && git push origin v0.1.0"
+            exit 1
+          fi
+          echo "Releasing $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  macos:
+    name: macOS saver
+    needs: tag
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: sh saver/build.sh
+      - name: Zip the saver
+        run: ditto -c -k --keepParent saver/build/Clocked.saver Clocked-macOS.saver.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: Clocked-macOS.saver.zip
+          if-no-files-found: error
+
+  windows:
+    name: Windows .scr
+    needs: tag
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      # Only the .exe is needed: Windows runs any .exe renamed to .scr as a screen saver
+      - run: pnpm tauri build --no-bundle
+      - name: Rename to .scr
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem src-tauri/target/release/*.exe | Select-Object -First 1
+          if (-not $exe) { throw "No .exe found in src-tauri/target/release" }
+          Copy-Item $exe.FullName Clocked.scr
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: Clocked.scr
+          if-no-files-found: error
+
+  release:
+    name: Attach to release
+    needs: [tag, macos, windows]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.tag.outputs.tag }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Create the release if needed and upload
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "Clocked $TAG" --generate-notes
+          gh release upload "$TAG" assets/* --repo "$GITHUB_REPOSITORY" --clobber
